@@ -13,6 +13,7 @@ conn = create_connection()
 #fix_database_schema(conn) 
 create_tables(conn)
 
+
 # Page Configuration
 st.set_page_config(
     page_title="Placement Portal", 
@@ -39,13 +40,20 @@ def logout():
     st.session_state.user_name = None
 
 # Custom CSS
+
+
 st.markdown("""
 <style>
     .main-header {
         font-size: 2.5rem;
         color: #000000;
+        color: #000000;
         text-align: center;
         margin-bottom: 1rem;
+    }
+     .stRadio div, .stTextInput label, .stsubheader {
+        color: white !important;
+        font-weight: bold;
     }
      .stRadio div, .stTextInput label, .stsubheader {
         color: white !important;
@@ -65,9 +73,13 @@ st.markdown("""
     }
     .blue-card {
         background: linear-gradient(135deg, #1e3c72, #2a5298);
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
     }
 
+
     .green-card {
+            background: linear-gradient(135deg, #3a0ca3, #7209b7);
+
             background: linear-gradient(135deg, #3a0ca3, #7209b7);
 
     }
@@ -78,11 +90,14 @@ st.markdown("""
     }
     .unread {
        background: linear-gradient(135deg, #1e3c72, #2a5298);
+       background: linear-gradient(135deg, #1e3c72, #2a5298);
     }
     .read {
         background: linear-gradient(135deg, #3a0ca3, #7209b7);
+        background: linear-gradient(135deg, #3a0ca3, #7209b7);
     }
     .stat-box {
+        background: linear-gradient(135deg, #3a0ca3, #7209b7);
         background: linear-gradient(135deg, #3a0ca3, #7209b7);
         border-radius: 10px;
         padding: 1rem;
@@ -91,7 +106,9 @@ st.markdown("""
     }
     .stat-value {
         font-size: 3rem;
+        font-size: 3rem;
         font-weight: bold;
+        color: white;
         color: white;
     }
     .stat-label {
@@ -216,10 +233,11 @@ elif st.session_state.user_type == "coordinator":
         # Top row statistics
         col1, col2, col3 = st.columns(3)
         
+       
         with col1:
             st.markdown('<div class="stat-box">', unsafe_allow_html=True)
-            st.markdown(f'<div class="stat-value">{stats["total_students"]}</div>', unsafe_allow_html=True)
-            st.markdown('<div class="stat-label">Total Students</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-value">{stats["placed_students"]}</div>', unsafe_allow_html=True)
+            st.markdown('<div class="stat-label">Placed Students</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
