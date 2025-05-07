@@ -13,11 +13,12 @@ conn = create_connection()
 fix_database_schema(conn) 
 create_tables(conn)
 
+
 # Page Configuration
 st.set_page_config(
     page_title="Placement Portal", 
     page_icon="🎯", 
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="expanded"
 )
 
@@ -39,13 +40,19 @@ def logout():
     st.session_state.user_name = None
 
 # Custom CSS
+
+
 st.markdown("""
 <style>
     .main-header {
         font-size: 2.5rem;
-        color: #1E88E5;
+        color: #000000;
         text-align: center;
         margin-bottom: 1rem;
+    }
+     .stRadio div, .stTextInput label, .stsubheader {
+        color: white !important;
+        font-weight: bold;
     }
     .sub-header {
         font-size: 1.8rem;
@@ -60,10 +67,12 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     .blue-card {
-        background-color: #E3F2FD;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
     }
+
     .green-card {
-        background-color: #E8F5E9;
+            background: linear-gradient(135deg, #3a0ca3, #7209b7);
+
     }
     .notification {
         padding: 0.8rem;
@@ -71,22 +80,22 @@ st.markdown("""
         margin-bottom: 0.5rem;
     }
     .unread {
-        background-color: #E3F2FD;
+       background: linear-gradient(135deg, #1e3c72, #2a5298);
     }
     .read {
-        background-color: #F5F5F5;
+        background: linear-gradient(135deg, #3a0ca3, #7209b7);
     }
     .stat-box {
-        background-color: #f0f2f6;
+        background: linear-gradient(135deg, #3a0ca3, #7209b7);
         border-radius: 10px;
         padding: 1rem;
         text-align: center;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
     .stat-value {
-        font-size: 2rem;
+        font-size: 3rem;
         font-weight: bold;
-        color: #1E88E5;
+        color: white;
     }
     .stat-label {
         font-size: 1rem;
@@ -95,106 +104,120 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Title
-st.markdown('<h1 class="main-header">🎯 Placement Portal</h1>', unsafe_allow_html=True)
 
-# Sidebar with authentication
-with st.sidebar:
-    if not st.session_state.logged_in:
-        st.subheader("Login")
-        user_type = st.radio("Select User Type", ["Placement Coordinator", "Student"])
+#  authentication
+
+if not st.session_state.logged_in:
+    # st.subheader("Login")
+    st.markdown(
+    """
+    <h1 class="main-header" style="color: black;">🎯 Placement Portal</h1>
+    """,
+    unsafe_allow_html=True
+    )
+    st.markdown('<h3 style="color: black; font-weight: bold;">Login</h3>', unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+    .main-header {
+        font-size: 2.5rem;
+        color: #000000;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+     .stRadio div, .stTextInput label, .stsubheader {
+        color: black !important;
+        font-weight: bold;
+    }</style>
+""", unsafe_allow_html=True)
+    user_type = st.radio("Select User Type", ["Placement Coordinator", "Student"])
+    
+    if user_type == "Placement Coordinator":
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
         
-        if user_type == "Placement Coordinator":
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            
-            if st.button("Login"):
-                if username == "admin" and password == "admin":
-                    st.session_state.logged_in = True
-                    st.session_state.user_type = "coordinator"
-                    st.session_state.user_name = "Admin"
-                    st.success("Login successful!")
-                    st.experimental_rerun()
-                else:
-                    st.error("Invalid credentials!")
+        if st.button("Login"):
+            if username == "admin" and password == "admin":
+                st.session_state.logged_in = True
+                st.session_state.user_type = "coordinator"
+                st.session_state.user_name = "Admin"
+                st.success("Login successful!")
+                st.rerun()
+            else:
+                st.error("Invalid credentials!")
+    
+    elif user_type == "Student":
+        roll_number = st.text_input("Roll Number")
+        password = st.text_input("Password", type="password")
         
-        elif user_type == "Student":
-            roll_number = st.text_input("Roll Number")
-            password = st.text_input("Password", type="password")
-            
-            if st.button("Login"):
-                student = get_student_by_roll(conn, roll_number, password)
-                if student:
-                    st.session_state.logged_in = True
-                    st.session_state.user_type = "student"
-                    st.session_state.user_id = student[0]
-                    st.session_state.user_name = student[1]
-                    st.success("Login successful!")
-                    st.experimental_rerun()
-                else:
-                    st.error("Invalid credentials!")
-    else:
-        st.write(f"Welcome, **{st.session_state.user_name}**")
-        st.button("Logout", on_click=logout)
-        
-        if st.session_state.user_type == "coordinator":
-            menu = st.radio("Navigation", [
-                "Dashboard", 
-                "Manage Students", 
-                "Manage Companies", 
-                "Notify Students", 
-                "Selected Students"
-            ])
-        elif st.session_state.user_type == "student":
-            menu = st.radio("Navigation", [
-                "Profile", 
-                "Eligible Companies", 
-                "Notifications", 
-                "Placement Statistics"
-            ])
+        if st.button("Login"):
+            student = get_student_by_roll(conn, roll_number, password)
+            if student:
+                st.session_state.logged_in = True
+                st.session_state.user_type = "student"
+                st.session_state.user_id = student[0]
+                st.session_state.user_name = student[1]
+                st.success("Login successful!")
+                st.rerun()
+            else:
+                st.error("Invalid credentials!")
+
+
+
+
+# Set page config for wide layout and center alignment
+
+
+
+# Close login-box and container divs
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+else:
+    st.markdown(
+    """
+    <h1 class="main-header" style="color: white;">🎯 Placement Portal</h1>
+    """,
+    unsafe_allow_html=True
+)
+    st.button("Logout", on_click=logout)
+    st.write(f"Welcome, **{st.session_state.user_name}**")
+    
+    
+    if st.session_state.user_type == "coordinator":
+        menu = st.radio("Navigation", [
+            "Dashboard", 
+            "Manage Students", 
+            "Manage Companies", 
+            "Notify Students", 
+            "Selected Students"
+        ])
+    elif st.session_state.user_type == "student":
+        menu = st.radio("Navigation", [
+            "Profile", 
+            "Eligible Companies", 
+            "Notifications", 
+            "Placement Statistics"
+        ])
 
 # Main content
 if not st.session_state.logged_in:
-    st.info("Please login to continue.")
     
-    # Show some information about the portal
-    st.markdown("### About the Placement Portal")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""
-        Welcome to the Placement Portal, a comprehensive system designed to streamline 
-        the campus placement process. This portal connects students with potential employers
-        and helps the placement coordinator manage the entire placement drive effectively.
-        
-        **Features for Students:**
-        - View eligible companies based on criteria
-        - Receive notifications about new opportunities
-        - Access placement statistics
-        - Track application status
-        
-        **Features for Coordinators:**
-        - Manage student and company data
-        - Match eligible students with companies
-        - Generate placement reports
-        - Track overall placement performance
-        """)
-    
-    with col2:
-        st.markdown("""
-        **Get Started:**
-        1. Login using your credentials
-        2. Explore available opportunities
-        3. Stay updated with notifications
-        4. Track your placement journey
-        
-        For any technical issues, please contact the administrator.
-        
-        **Demo Credentials:**
-        - **Coordinator:** Username: admin, Password: admin
-        - **Student:** Please contact the coordinator for your credentials
-        """)
+
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background-image: url("https://theplan.it//awardsContest/2019/Education/3194/1_Thapar_Student_Residencies.jpg");
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+  
 
 # Coordinator Portal
 elif st.session_state.user_type == "coordinator":
@@ -209,10 +232,11 @@ elif st.session_state.user_type == "coordinator":
         # Top row statistics
         col1, col2, col3 = st.columns(3)
         
+       
         with col1:
             st.markdown('<div class="stat-box">', unsafe_allow_html=True)
-            st.markdown(f'<div class="stat-value">{stats["total_students"]}</div>', unsafe_allow_html=True)
-            st.markdown('<div class="stat-label">Total Students</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-value">{stats["placed_students"]}</div>', unsafe_allow_html=True)
+            st.markdown('<div class="stat-label">Placed Students</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
@@ -240,7 +264,7 @@ elif st.session_state.user_type == "coordinator":
         with col2:
             st.markdown('<div class="stat-box">', unsafe_allow_html=True)
             max_package = float(stats["max_package"].replace(" LPA", "").strip())
-            max_package = st.number_input("Package (LPA)", 0.0, 100.0, value=max_package, step=0.1)
+           
             st.markdown(f'<div class="stat-value">₹{max_package:.2f}L</div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-label">Highest Package</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
@@ -248,7 +272,7 @@ elif st.session_state.user_type == "coordinator":
         with col3:
             st.markdown('<div class="stat-box">', unsafe_allow_html=True)
             min_package = float(stats["min_package"].replace(" LPA", "").strip())
-            min_package = st.number_input("Package (LPA)", 0.0, 100.0, value=min_package, step=0.1)
+            
             st.markdown(f'<div class="stat-value">₹{min_package:.2f}L</div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-label">Lowest Package</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
@@ -890,7 +914,7 @@ elif st.session_state.user_type == "student":
             st.markdown('<div class="stat-box">', unsafe_allow_html=True)
             try:
                 max_package = float(stats["max_package"].replace(" LPA", "").strip())
-                max_package = st.number_input("Package (LPA)", 0.0, 100.0, value=max_package, step=0.1)
+                # max_package = st.number_input("Package (LPA)", 0.0, 100.0, value=max_package, step=0.1)
             except ValueError:
                 max_package = 0.0  # Default value if conversion fails
             
