@@ -10,14 +10,14 @@ from database import *
 
 # Initialize database
 conn = create_connection()
-fix_database_schema(conn) 
+#fix_database_schema(conn) 
 create_tables(conn)
 
 # Page Configuration
 st.set_page_config(
     page_title="Placement Portal", 
     page_icon="🎯", 
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="expanded"
 )
 
@@ -43,13 +43,17 @@ st.markdown("""
 <style>
     .main-header {
         font-size: 2.5rem;
-        color: #1E88E5;
+        color: #000000;
         text-align: center;
         margin-bottom: 1rem;
     }
+     .stRadio div, .stTextInput label, .stsubheader {
+        color: white !important;
+        font-weight: bold;
+    }
     .sub-header {
         font-size: 1.8rem;
-        color: #333;
+        color: white;
         margin-top: 1rem;
         margin-bottom: 0.5rem;
     }
@@ -60,10 +64,12 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     .blue-card {
-        background-color: #E3F2FD;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
     }
+
     .green-card {
-        background-color: #E8F5E9;
+            background: linear-gradient(135deg, #3a0ca3, #7209b7);
+
     }
     .notification {
         padding: 0.8rem;
@@ -71,130 +77,131 @@ st.markdown("""
         margin-bottom: 0.5rem;
     }
     .unread {
-        background-color: #E3F2FD;
+       background: linear-gradient(135deg, #1e3c72, #2a5298);
     }
     .read {
-        background-color: #F5F5F5;
+        background: linear-gradient(135deg, #3a0ca3, #7209b7);
     }
     .stat-box {
-        background-color: #f0f2f6;
+        background: linear-gradient(135deg, #3a0ca3, #7209b7);
         border-radius: 10px;
         padding: 1rem;
         text-align: center;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
     .stat-value {
-        font-size: 2rem;
+        font-size: 3rem;
         font-weight: bold;
-        color: #1E88E5;
+        color: white;
     }
     .stat-label {
         font-size: 1rem;
-        color: #555;
+        color: white;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Title
-st.markdown('<h1 class="main-header">🎯 Placement Portal</h1>', unsafe_allow_html=True)
-
 # Sidebar with authentication
-with st.sidebar:
-    if not st.session_state.logged_in:
-        st.subheader("Login")
-        user_type = st.radio("Select User Type", ["Placement Coordinator", "Student"])
+if not st.session_state.logged_in:
+    # st.subheader("Login")
+    st.markdown(
+    """
+    <h1 class="main-header" style="color: black;">🎯 Placement Portal</h1>
+    """,
+    unsafe_allow_html=True
+    )
+    st.markdown('<h3 style="color: black; font-weight: bold;">Login</h3>', unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+    .main-header {
+        font-size: 2.5rem;
+        color: #000000;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+     .stRadio div, .stTextInput label, .stsubheader {
+        color: black !important;
+        font-weight: bold;
+    }</style>
+""", unsafe_allow_html=True)
+    
+    user_type = st.radio("Select User Type", ["Placement Coordinator", "Student"])
+    
+    if user_type == "Placement Coordinator":
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
         
-        if user_type == "Placement Coordinator":
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            
-            if st.button("Login"):
-                if username == "admin" and password == "admin":
-                    st.session_state.logged_in = True
-                    st.session_state.user_type = "coordinator"
-                    st.session_state.user_name = "Admin"
-                    st.success("Login successful!")
-                    st.experimental_rerun()
-                else:
-                    st.error("Invalid credentials!")
+        if st.button("Login"):
+            if username == "admin" and password == "admin":
+                st.session_state.logged_in = True
+                st.session_state.user_type = "coordinator"
+                st.session_state.user_name = "Admin"
+                st.success("Login successful!")
+                st.experimental_rerun()
+            else:
+                st.error("Invalid credentials!")
+    
+    elif user_type == "Student":
+        roll_number = st.text_input("Roll Number")
+        password = st.text_input("Password", type="password")
         
-        elif user_type == "Student":
-            roll_number = st.text_input("Roll Number")
-            password = st.text_input("Password", type="password")
-            
-            if st.button("Login"):
-                student = get_student_by_roll(conn, roll_number, password)
-                if student:
-                    st.session_state.logged_in = True
-                    st.session_state.user_type = "student"
-                    st.session_state.user_id = student[0]
-                    st.session_state.user_name = student[1]
-                    st.success("Login successful!")
-                    st.experimental_rerun()
-                else:
-                    st.error("Invalid credentials!")
-    else:
-        st.write(f"Welcome, **{st.session_state.user_name}**")
-        st.button("Logout", on_click=logout)
-        
-        if st.session_state.user_type == "coordinator":
-            menu = st.radio("Navigation", [
-                "Dashboard", 
-                "Manage Students", 
-                "Manage Companies", 
-                "Notify Students", 
-                "Selected Students"
-            ])
-        elif st.session_state.user_type == "student":
-            menu = st.radio("Navigation", [
-                "Profile", 
-                "Eligible Companies", 
-                "Notifications", 
-                "Placement Statistics"
-            ])
+        if st.button("Login"):
+            student = get_student_by_roll(conn, roll_number, password)
+            if student:
+                st.session_state.logged_in = True
+                st.session_state.user_type = "student"
+                st.session_state.user_id = student[1]
+                st.session_state.user_name = student[0]
+                st.success("Login successful!")
+                st.experimental_rerun()
+            else:
+                st.error("Invalid credentials!")
 
+
+# Close login-box and container divs
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+else:
+    st.markdown(
+    """
+    <h1 class="main-header" style="color: white;">🎯 Placement Portal</h1>
+    """,
+    unsafe_allow_html=True
+    )
+    st.button("Logout", on_click=logout)
+    st.write(f"Welcome, **{st.session_state.user_name}**")
+    
+    if st.session_state.user_type == "coordinator":
+        menu = st.radio("Navigation", [
+            "Dashboard", 
+            "Manage Students", 
+            "Manage Companies", 
+            "Notify Students", 
+            "Selected Students"
+        ])
+    elif st.session_state.user_type == "student":
+        menu = st.radio("Navigation", [
+            "Profile", 
+            "Eligible Companies", 
+            "Notifications", 
+            "Placement Statistics"
+        ])
 # Main content
 if not st.session_state.logged_in:
-    st.info("Please login to continue.")
-    
-    # Show some information about the portal
-    st.markdown("### About the Placement Portal")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""
-        Welcome to the Placement Portal, a comprehensive system designed to streamline 
-        the campus placement process. This portal connects students with potential employers
-        and helps the placement coordinator manage the entire placement drive effectively.
-        
-        **Features for Students:**
-        - View eligible companies based on criteria
-        - Receive notifications about new opportunities
-        - Access placement statistics
-        - Track application status
-        
-        **Features for Coordinators:**
-        - Manage student and company data
-        - Match eligible students with companies
-        - Generate placement reports
-        - Track overall placement performance
-        """)
-    
-    with col2:
-        st.markdown("""
-        **Get Started:**
-        1. Login using your credentials
-        2. Explore available opportunities
-        3. Stay updated with notifications
-        4. Track your placement journey
-        
-        For any technical issues, please contact the administrator.
-        
-        **Demo Credentials:**
-        - **Coordinator:** Username: admin, Password: admin
-        - **Student:** Please contact the coordinator for your credentials
-        """)
+
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background-image: url("https://theplan.it//awardsContest/2019/Education/3194/1_Thapar_Student_Residencies.jpg");
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
 # Coordinator Portal
 elif st.session_state.user_type == "coordinator":
@@ -240,7 +247,6 @@ elif st.session_state.user_type == "coordinator":
         with col2:
             st.markdown('<div class="stat-box">', unsafe_allow_html=True)
             max_package = float(stats["max_package"].replace(" LPA", "").strip())
-            max_package = st.number_input("Package (LPA)", 0.0, 100.0, value=max_package, step=0.1)
             st.markdown(f'<div class="stat-value">₹{max_package:.2f}L</div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-label">Highest Package</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
@@ -248,7 +254,6 @@ elif st.session_state.user_type == "coordinator":
         with col3:
             st.markdown('<div class="stat-box">', unsafe_allow_html=True)
             min_package = float(stats["min_package"].replace(" LPA", "").strip())
-            min_package = st.number_input("Package (LPA)", 0.0, 100.0, value=min_package, step=0.1)
             st.markdown(f'<div class="stat-value">₹{min_package:.2f}L</div>', unsafe_allow_html=True)
             st.markdown('<div class="stat-label">Lowest Package</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
@@ -289,7 +294,7 @@ elif st.session_state.user_type == "coordinator":
         selected = get_selected_students(conn)
         if selected:
             df = pd.DataFrame(selected, columns=[
-                'ID', 'Name', 'Roll Number', 'Branch', 'CGPA', 
+                'Name', 'Roll Number', 'Branch', 'CGPA', 
                 'Company', 'Role', 'Package (LPA)', 'Selection Date'
             ])
             st.dataframe(df[['Name', 'Roll Number', 'Branch', 'Company', 'Role', 'Package (LPA)', 'Selection Date']], use_container_width=True)
@@ -307,7 +312,7 @@ elif st.session_state.user_type == "coordinator":
             students = get_all_students(conn)
             if students:
                 df = pd.DataFrame(students, columns=[
-                    'ID', 'Name', 'Roll Number', 'Branch', 'CGPA', 
+                    'Name', 'Roll Number', 'Branch', 'CGPA', 
                     'Graduation Year', 'Password', 'Placed'
                 ])
                 df['Placed'] = df['Placed'].apply(lambda x: 'Yes' if x == 1 else 'No')
@@ -351,19 +356,19 @@ elif st.session_state.user_type == "coordinator":
                 
                 if selected:
                     with st.form("update_student_form"):
-                        st.subheader(f"Update Student: {selected[1]}")
-                        name = st.text_input("Name", value=selected[1])
-                        branch = st.selectbox("Branch", ["CSE", "IT", "ECE", "EEE", "MECH", "CIVIL", "OTHER"], index=["CSE", "IT", "ECE", "EEE", "MECH", "CIVIL"].index(selected[3]) if selected[3] in ["CSE", "IT", "ECE", "EEE", "MECH", "CIVIL"] else 6)
+                        st.subheader(f"Update Student: {selected[0]}")
+                        name = st.text_input("Name", value=selected[0])
+                        branch = st.selectbox("Branch", ["CSE", "IT", "ECE", "EEE", "MECH", "CIVIL", "OTHER"], index=["CSE", "IT", "ECE", "EEE", "MECH", "CIVIL"].index(selected[2]) if selected[2] in ["CSE", "IT", "ECE", "EEE", "MECH", "CIVIL"] else 6)
                         if branch == "OTHER":
-                            branch = st.text_input("Specify Branch", value=selected[3])
-                        cgpa = st.number_input("CGPA", 0.0, 10.0, value=selected[4], step=0.1)
-                        grad_year = st.number_input("Graduation Year", 2024, 2030, value=selected[5])
-                        password = st.text_input("Password", value=selected[6], type="password")
+                            branch = st.text_input("Specify Branch", value=selected[0])
+                        cgpa = st.number_input("CGPA", 0.0, 10.0, value=selected[3], step=0.1)
+                        grad_year = st.number_input("Graduation Year", 2024, 2030, value=selected[4])
+                        password = st.text_input("Password", value=selected[5], type="password")
                         
                         submit = st.form_submit_button("Update Student")
                         if submit:
                             if name and branch and password:
-                                update_student(conn, selected[0], (name, branch, cgpa, grad_year, password))
+                                update_student(conn, selected[1], (name, branch, cgpa, grad_year, password))
                                 st.success(f"Student {name} updated successfully!")
                             else:
                                 st.error("Please fill all required fields.")
@@ -377,12 +382,12 @@ elif st.session_state.user_type == "coordinator":
                 selected = st.selectbox(
                     "Select Student to Delete", 
                     students, 
-                    format_func=lambda x: f"{x[1]} ({x[2]})",
+                    format_func=lambda x: f"{x[0]} ({x[1]})",
                     key="delete_student"
                 )
                 
                 if selected:
-                    st.warning(f"Are you sure you want to delete {selected[1]} ({selected[2]})? This action cannot be undone.")
+                    st.warning(f"Are you sure you want to delete {selected[0]} ({selected[1]})? This action cannot be undone.")
                     if st.button("Delete Student"):
                         delete_student(conn, selected[0])
                         st.success(f"Student {selected[1]} deleted successfully!")
@@ -430,7 +435,7 @@ elif st.session_state.user_type == "coordinator":
                     students = get_all_students(conn)
                     if students:
                         df = pd.DataFrame(students, columns=[
-                            'id', 'name', 'roll_number', 'branch', 'cgpa', 
+                            'name', 'roll_number', 'branch', 'cgpa', 
                             'grad_year', 'password', 'placed'
                         ])
                         
@@ -644,13 +649,13 @@ elif st.session_state.user_type == "coordinator":
                 if eligible_students:
                     st.subheader(f"Eligible Students ({len(eligible_students)})")
                     df = pd.DataFrame(eligible_students, columns=[
-                        'ID', 'Name', 'Roll Number', 'Branch', 'CGPA', 'Graduation Year'
+                        'Name', 'Roll Number', 'Branch', 'CGPA', 'Graduation Year'
                     ])
-                    st.dataframe(df.drop('ID', axis=1), use_container_width=True)
+                    st.dataframe(df, use_container_width=True)
                     
                     if st.button("Notify All Eligible Students"):
                         for student in eligible_students:
-                            add_eligibility(conn, student[0], selected_company[0])
+                            add_eligibility(conn, student[1], selected_company[0])
                         st.success(f"Successfully notified {len(eligible_students)} students about {selected_company[1]}!")
                 else:
                     st.info("No eligible students found for this company's criteria.")
@@ -680,7 +685,7 @@ elif st.session_state.user_type == "coordinator":
                 
                 if selected_students:
                     df = pd.DataFrame(selected_students, columns=[
-                        'ID', 'Name', 'Roll Number', 'Branch', 'CGPA', 
+                        'Name', 'Roll Number', 'Branch', 'CGPA', 
                         'Company', 'Role', 'Package (LPA)', 'Selection Date'
                     ])
                     st.dataframe(df[['Name', 'Roll Number', 'Branch', 'CGPA', 'Company', 'Role', 'Package (LPA)', 'Selection Date']], use_container_width=True)
@@ -701,7 +706,7 @@ elif st.session_state.user_type == "coordinator":
                 
                 if selected_company:
                     # Get eligible students
-                    eligible_students = get_eligible_students_for_company(conn, selected_company)
+                    eligible_students = get_applied_students_for_company(conn, selected_company)
                     
                     if eligible_students:
                         st.subheader("Select Students to Mark as Placed")
@@ -713,10 +718,10 @@ elif st.session_state.user_type == "coordinator":
                         
                         if st.button("Mark Selected Students as Placed"):
                             for student in selected_student_ids:
-                                add_selected_student(conn, student[0], selected_company[0])
+                                add_selected_student(conn, student[2], selected_company[0])
                             st.success(f"{len(selected_student_ids)} students marked as placed at {selected_company[1]}!")
                     else:
-                        st.info("No eligible students found for this company.")
+                        st.info("No student applied for this company.")
             else:
                 st.info("No companies found in the database.")
         
@@ -775,17 +780,17 @@ elif st.session_state.user_type == "student":
             st.markdown(f"""
             <div class="card blue-card">
                 <h3>Personal Information</h3>
-                <p><strong>Name:</strong> {student[1]}</p>
-                <p><strong>Roll Number:</strong> {student[2]}</p>
-                <p><strong>Branch:</strong> {student[3]}</p>
-                <p><strong>CGPA:</strong> {student[4]}</p>
-                <p><strong>Graduation Year:</strong> {student[5]}</p>
-                <p><strong>Placement Status:</strong> {'Placed' if student[7] == 1 else 'Not Placed'}</p>
+                <p><strong>Name:</strong> {student[0]}</p>
+                <p><strong>Roll Number:</strong> {student[1]}</p>
+                <p><strong>Branch:</strong> {student[2]}</p>
+                <p><strong>CGPA:</strong> {student[3]}</p>
+                <p><strong>Graduation Year:</strong> {student[4]}</p>
+                <p><strong>Placement Status:</strong> {'Placed' if student[6] == 1 else 'Not Placed'}</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col2:
-            if student[7] == 1:  # If student is placed
+            if student[6] == 1:  # If student is placed
                 # Get placement details
                 cursor = conn.cursor()
                 cursor.execute('''
@@ -858,8 +863,8 @@ elif st.session_state.user_type == "student":
                 """, unsafe_allow_html=True)
                 
                 if notification[3] == 0:  # Unread
-                    if st.button("Mark as Read", key=f"notif_{notification[0]}"):
-                        mark_notification_read(conn, notification[0])
+                    if st.button("Mark as Read", key=f"notif_{notification[0]}_{notification[2]}"):
+                        mark_notification_read(conn, notification[0], notification[2])
                         st.experimental_rerun()
         else:
             st.info("You have no notifications at the moment.")
@@ -889,7 +894,7 @@ elif st.session_state.user_type == "student":
         with col3:
             st.markdown('<div class="stat-box">', unsafe_allow_html=True)
             try:
-                max_package = float(stats["max_package"].replace(" LPA", "").strip())
+                max_package = float(stats["max_package"])
                 max_package = st.number_input("Package (LPA)", 0.0, 100.0, value=max_package, step=0.1)
             except ValueError:
                 max_package = 0.0  # Default value if conversion fails

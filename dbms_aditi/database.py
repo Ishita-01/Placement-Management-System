@@ -2,7 +2,7 @@ import sqlite3
 import pandas as pd
 
 def create_connection():
-    return sqlite3.connect('placement_portal.db', check_same_thread=False)
+    return sqlite3.connect('placement_portal_1.db', check_same_thread=False)
 
 def create_tables(conn):
     cursor = conn.cursor()
@@ -10,9 +10,8 @@ def create_tables(conn):
     # Students Table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS students (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        roll_number TEXT UNIQUE NOT NULL,
+        roll_number TEXT PRIMARY KEY,
         branch TEXT NOT NULL,
         cgpa REAL,
         grad_year INTEGER,
@@ -35,37 +34,35 @@ def create_tables(conn):
     # Eligibility Table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS eligibility (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        student_id INTEGER,
+        student_id TEXT,
         company_id INTEGER,
         notified INTEGER DEFAULT 0,
         applied INTEGER DEFAULT 0,
-        FOREIGN KEY(student_id) REFERENCES students(id),
+        FOREIGN KEY(student_id) REFERENCES students(roll_number),
         FOREIGN KEY(company_id) REFERENCES companies(id),
-        UNIQUE(student_id, company_id)
+        PRIMARY KEY(student_id, company_id)
     )''')
     
     # Selected Students Table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS selected_students (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        student_id INTEGER,
+        student_id TEXT,
         company_id INTEGER,
         selection_date TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(student_id) REFERENCES students(id),
+        FOREIGN KEY(student_id) REFERENCES students(roll_number),
         FOREIGN KEY(company_id) REFERENCES companies(id),
-        UNIQUE(student_id, company_id)
+        PRIMARY KEY(student_id, company_id)
     )''')
     
     # Notifications Table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS notifications (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        student_id INTEGER,
+        student_id TEXT,
         message TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         read INTEGER DEFAULT 0,
-        FOREIGN KEY(student_id) REFERENCES students(id)
+        FOREIGN KEY(student_id) REFERENCES students(roll_number)
+        PRIMARY KEY (student_id, created_at)
     )''')
     
     conn.commit()
@@ -90,13 +87,13 @@ def update_student(conn, student_id, update_data):
     cursor.execute('''
     UPDATE students SET 
     name=?, branch=?, cgpa=?, grad_year=?, password=?
-    WHERE id=?
+    WHERE roll_number=?
     ''', (*update_data, student_id))
     conn.commit()
 
 def delete_student(conn, student_id):
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM students WHERE id=?", (student_id,))
+    cursor.execute("DELETE FROM students WHERE roll_number=?", (student_id,))
     cursor.execute("DELETE FROM eligibility WHERE student_id=?", (student_id,))
     cursor.execute("DELETE FROM selected_students WHERE student_id=?", (student_id,))
     cursor.execute("DELETE FROM notifications WHERE student_id=?", (student_id,))
@@ -139,7 +136,7 @@ def get_eligible_students_for_company(conn, company):
     placeholders = ','.join(['?']*len(branches))
     
     query = f'''
-    SELECT s.id, s.name, s.roll_number, s.branch, s.cgpa, s.grad_year
+    SELECT s.name, s.roll_number, s.branch, s.cgpa, s.grad_year
     FROM students s
     WHERE s.branch IN ({placeholders})
     AND s.cgpa >= ?
@@ -153,9 +150,9 @@ def get_eligible_students_for_company(conn, company):
 def add_eligibility(conn, student_id, company_id):
     cursor = conn.cursor()
     cursor.execute('''
-    INSERT OR IGNORE INTO eligibility (student_id, company_id, notified)
-    VALUES (?, ?, 1)
-    ''', (student_id, company_id))
+    INSERT OR IGNORE INTO eligibility (student_id, company_id, notified, applied)
+    VALUES (?, ?, 1, ?)
+    ''', (student_id, company_id, 0))
     
     # Create notification for student
     company_name = get_company_by_id(conn, company_id)[1]
@@ -184,7 +181,7 @@ def add_selected_student(conn, student_id, company_id):
         # Update student placed status
         cursor.execute('''
         UPDATE students SET placed=1
-        WHERE id=?
+        WHERE roll_number=?
         ''', (student_id,))
         
         # Create notification for student
@@ -212,7 +209,7 @@ def import_selected_students_csv(conn, file, company_id):
         
         if student:
             try:
-                if add_selected_student(conn, student[0], company_id):
+                if add_selected_student(conn, student[1], company_id):
                     success_count += 1
                 else:
                     failed_count += 1
@@ -235,19 +232,19 @@ def add_notification(conn, student_id, message):
 def get_notifications(conn, student_id):
     cursor = conn.cursor()
     cursor.execute('''
-    SELECT id, message, created_at, read
+    SELECT student_id, message, created_at, read
     FROM notifications
     WHERE student_id=?
     ORDER BY created_at DESC
     ''', (student_id,))
     return cursor.fetchall()
 
-def mark_notification_read(conn, notification_id):
+def mark_notification_read(conn, student_id, created_at):
     cursor = conn.cursor()
     cursor.execute('''
     UPDATE notifications SET read=1
-    WHERE id=?
-    ''', (notification_id,))
+    WHERE student_id=? AND created_at=?
+    ''', (student_id, created_at,))
     conn.commit()
 
 # Data Retrieval
@@ -268,7 +265,7 @@ def get_company_by_id(conn, company_id):
 
 def get_student_by_id(conn, student_id):
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM students WHERE id=?", (student_id,))
+    cursor.execute("SELECT * FROM students WHERE roll_number=?", (student_id,))
     return cursor.fetchone()
 
 def get_eligible_companies_for_student(conn, student_id):
@@ -295,22 +292,46 @@ def get_selected_students(conn, company_id=None):
     cursor = conn.cursor()
     if company_id:
         cursor.execute('''
-        SELECT s.id, s.name, s.roll_number, s.branch, s.cgpa, c.name, c.role, c.package, ss.selection_date
+        SELECT s.name, s.roll_number, s.branch, s.cgpa, c.name, c.role, c.package, ss.selection_date
         FROM selected_students ss
-        JOIN students s ON ss.student_id = s.id
+        JOIN students s ON ss.student_id = s.roll_number
         JOIN companies c ON ss.company_id = c.id
         WHERE ss.company_id = ?
         ORDER BY ss.selection_date DESC
         ''', (company_id,))
     else:
         cursor.execute('''
-        SELECT s.id, s.name, s.roll_number, s.branch, s.cgpa, c.name, c.role, c.package, ss.selection_date
+        SELECT s.name, s.roll_number, s.branch, s.cgpa, c.name, c.role, c.package, ss.selection_date
         FROM selected_students ss
-        JOIN students s ON ss.student_id = s.id
+        JOIN students s ON ss.student_id = s.roll_number
         JOIN companies c ON ss.company_id = c.id
         ORDER BY ss.selection_date DESC
         ''')
     return cursor.fetchall()
+def get_applied_students_for_company(conn, company):
+    cursor = conn.cursor()
+    if company[2] is not None:
+        branches = [b.strip() for b in company[2].split(',')]
+    else:
+        branches = []
+
+    placeholders = ','.join(['?'] * len(branches))
+    
+    query = f'''
+    SELECT s.rowid, s.name, s.roll_number, s.branch, s.cgpa, s.grad_year
+    FROM students s
+    JOIN eligibility e ON s.roll_number = e.student_id
+    WHERE s.branch IN ({placeholders})
+    AND s.cgpa >= ?
+    AND s.grad_year = ?
+    AND s.placed = 0
+    AND e.company_id = ?
+    AND e.applied = 1
+    '''
+
+    cursor.execute(query, branches + [company[3], company[4], company[0]])
+    return cursor.fetchall()
+
 
 # Statistics
 def get_placement_statistics(conn):
@@ -334,7 +355,7 @@ def get_placement_statistics(conn):
     cursor.execute('''
     SELECT s.branch, COUNT(ss.student_id)
     FROM students s
-    JOIN selected_students ss ON s.id = ss.student_id
+    JOIN selected_students ss ON s.roll_number = ss.student_id
     GROUP BY s.branch
     ''')
     stats['branch_placements'] = cursor.fetchall()
@@ -368,24 +389,24 @@ def get_placement_statistics(conn):
     
     return stats
 
-def fix_database_schema(conn):
-    cursor = conn.cursor()
-    # Check if placed column exists
-    try:
-        cursor.execute("SELECT placed FROM students LIMIT 1")
-        print("Column exists, no action needed")
-    except sqlite3.OperationalError:
-        # Column doesn't exist, add it
-        print("Adding missing placed column")
-        cursor.execute("ALTER TABLE students ADD COLUMN placed INTEGER DEFAULT 0")
-        conn.commit()
+# def fix_database_schema(conn):
+#     cursor = conn.cursor()
+#     # Check if placed column exists
+#     try:
+#         cursor.execute("SELECT placed FROM students LIMIT 1")
+#         print("Column exists, no action needed")
+#     except sqlite3.OperationalError:
+#         # Column doesn't exist, add it
+#         print("Adding missing placed column")
+#         cursor.execute("ALTER TABLE students ADD COLUMN placed INTEGER DEFAULT 0")
+#         conn.commit()
 
-     # Check if selection_date column exists in selected_students table
-    try:
-        cursor.execute("SELECT selection_date FROM selected_students LIMIT 1")
-        print("selection_date column exists, no action needed")
-    except sqlite3.OperationalError:
-        # Column doesn't exist, add it
-        print("Adding missing selection_date column")
-        cursor.execute("ALTER TABLE selected_students ADD COLUMN selection_date TEXT DEFAULT CURRENT_TIMESTAMP")
-        conn.commit()
+#      # Check if selection_date column exists in selected_students table
+#     try:
+#         cursor.execute("SELECT selection_date FROM selected_students LIMIT 1")
+#         print("selection_date column exists, no action needed")
+#     except sqlite3.OperationalError:
+#         # Column doesn't exist, add it
+#         print("Adding missing selection_date column")
+#         cursor.execute("ALTER TABLE selected_students ADD COLUMN selection_date TEXT DEFAULT CURRENT_TIMESTAMP")
+#         conn.commit()
