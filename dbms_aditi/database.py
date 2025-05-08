@@ -308,6 +308,7 @@ def get_selected_students(conn, company_id=None):
         ORDER BY ss.selection_date DESC
         ''')
     return cursor.fetchall()
+
 def get_applied_students_for_company(conn, company):
     cursor = conn.cursor()
     if company[2] is not None:

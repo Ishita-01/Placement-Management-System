@@ -154,7 +154,7 @@ if not st.session_state.logged_in:
                 st.session_state.user_type = "coordinator"
                 st.session_state.user_name = "Admin"
                 st.success("Login successful!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid credentials!")
     
@@ -170,7 +170,7 @@ if not st.session_state.logged_in:
                 st.session_state.user_id = student[1]
                 st.session_state.user_name = student[0]
                 st.success("Login successful!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid credentials!")
 
@@ -236,8 +236,8 @@ elif st.session_state.user_type == "coordinator":
        
         with col1:
             st.markdown('<div class="stat-box">', unsafe_allow_html=True)
-            st.markdown(f'<div class="stat-value">{stats["placed_students"]}</div>', unsafe_allow_html=True)
-            st.markdown('<div class="stat-label">Placed Students</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-value">{stats["total_students"] - stats["placed_students"]}</div>', unsafe_allow_html=True)
+            st.markdown('<div class="stat-label">Unplaced Students</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
@@ -405,11 +405,11 @@ elif st.session_state.user_type == "coordinator":
                 )
                 
                 if selected:
-                    st.warning(f"Are you sure you want to delete {selected[0]} ({selected[1]})? This action cannot be undone.")
+                    st.warning(f"Are you sure you want to delete {selected[1]} ({selected[0]})? This action cannot be undone.")
                     if st.button("Delete Student"):
-                        delete_student(conn, selected[0])
-                        st.success(f"Student {selected[1]} deleted successfully!")
-                        st.experimental_rerun()
+                        delete_student(conn, selected[1])
+                        st.success(f"Student {selected[0]} deleted successfully!")
+                        st.rerun()
             else:
                 st.info("No students found in the database.")
         
@@ -577,7 +577,7 @@ elif st.session_state.user_type == "coordinator":
                     if st.button("Delete Company"):
                         delete_company(conn, selected[0])
                         st.success(f"Company {selected[1]} deleted successfully!")
-                        st.experimental_rerun()
+                        st.rerun()
             else:
                 st.info("No companies found in the database.")
         
@@ -858,7 +858,7 @@ elif st.session_state.user_type == "student":
                             if st.button("Apply Now", key=f"apply_{company[0]}"):
                                 set_applied_status(conn, student_id, company[0], 1)
                                 st.success(f"Successfully applied to {company[1]}!")
-                                st.experimental_rerun()
+                                st.rerun()
                         else:  # Already applied
                             st.success("You have already applied for this company")
         else:
@@ -883,7 +883,7 @@ elif st.session_state.user_type == "student":
                 if notification[3] == 0:  # Unread
                     if st.button("Mark as Read", key=f"notif_{notification[0]}_{notification[2]}"):
                         mark_notification_read(conn, notification[0], notification[2])
-                        st.experimental_rerun()
+                        st.rerun()
         else:
             st.info("You have no notifications at the moment.")
     
@@ -912,8 +912,7 @@ elif st.session_state.user_type == "student":
         with col3:
             st.markdown('<div class="stat-box">', unsafe_allow_html=True)
             try:
-                max_package = float(stats["max_package"])
-                max_package = st.number_input("Package (LPA)", 0.0, 100.0, value=max_package, step=0.1)
+                max_package = float(stats["max_package"].replace(" LPA", "").strip())
             except ValueError:
                 max_package = 0.0  # Default value if conversion fails
             
